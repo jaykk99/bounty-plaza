@@ -93,7 +93,14 @@ def create_redeem(req: RedeemRequest):
         "INSERT INTO transactions (tx_type, from_user, amount, reason, prev_hash, hash, status) VALUES (?,?,?,?,?,?,'approved')",
         ("redeem", req.username, req.amount, f"自助兑换 #{req_id}", tx_data["prev_hash"], tx_data["hash"])
     )
-    conn.execute("UPDATE accounts SET balance = balance - ? WHERE username = ?", (req.amount, req.username))
+    cur = conn.execute(
+        "UPDATE accounts SET balance = balance - ? WHERE username = ? AND balance >= ?",
+        (req.amount, req.username, req.amount)
+    )
+    if cur.rowcount == 0:
+        conn.rollback()
+        conn.close()
+        raise HTTPException(status_code=400, detail="余额不足（并发冲突）")
     conn.execute("UPDATE redeem_requests SET status = 'approved', updated_at = datetime('now') WHERE id = ?", (req_id,))
     conn.commit()
     conn.close()
@@ -123,7 +130,7 @@ def get_redeem_status(redeem_id: int):
         "id": row["id"],
         "username": row["username"],
         "amount_coins": row["amount"],
-        "cash_usd": round(row["coin_value"], 2),
+        "cash_usd": round(row["coin_value"] or 0, 2),
         "address": row["address"],
         "status": row["status"],
         "created_at": row["created_at"],
@@ -144,7 +151,7 @@ def get_history(username: str):
         {
             "id": r["id"],
             "amount_coins": r["amount"],
-            "cash_usd": round(r["coin_value"], 2),
+            "cash_usd": round(r["coin_value"] or 0, 2),
             "address": r["address"],
             "status": r["status"],
             "created_at": r["created_at"],

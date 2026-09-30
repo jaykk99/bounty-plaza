@@ -70,6 +70,7 @@ def init_db():
             amount      INTEGER NOT NULL,
             coin_value  REAL NOT NULL,
             address     TEXT NOT NULL,
+            note        TEXT DEFAULT '',
             status      TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','paid')),
             created_at  TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
@@ -298,27 +299,15 @@ def cmd_pay(args):
 
         if getattr(args, 'json', False):
             import json as _json
-            print(_json.dumps({"ok": True, "id": args.id, "username": req["username"], "amount": req["amount"], "cash_value": round(req.get("coin_value", req["amount"] * 0.72), 2), "status": "paid"}))
+            print(_json.dumps({"ok": True, "id": args.id, "username": req["username"], "amount": req["amount"], "cash_value": round(req["coin_value"], 2), "status": "paid"}))
         else:
-            print(f"✅ 兑换 #{args.id} 已标记为已支付: {req['username']} ${req.get('coin_value', req['amount'] * 0.72):.2f}")
+            print(f"✅ 兑换 #{args.id} 已标记为已支付: {req['username']} ${req['coin_value']:.2f}")
     except Exception as e:
         conn.rollback()
         print(f"ERROR: {e}")
         return 1
     finally:
         conn.close()
-    return 0
-    conn = get_db()
-    cur = conn.execute("SELECT * FROM redeem_requests WHERE id = ? AND status = 'approved'", (args.id,))
-    req = cur.fetchone()
-    if not req:
-        print(f"ERROR: 兑换请求 #{args.id} 不存在或未批准")
-        return 1
-    conn.execute("UPDATE redeem_requests SET status = 'paid', updated_at = datetime('now') WHERE id = ?", (args.id,))
-    conn.execute("UPDATE transactions SET status = 'completed' WHERE reason = ?", (f"兑换请求 #{args.id}",))
-    conn.commit()
-    conn.close()
-    print(f"✅ 兑换 #{args.id} 已标记为已支付")
     return 0
 
 
@@ -362,7 +351,7 @@ def cmd_audit(args):
         print("暂无交易记录")
         return 0
     for row in rows:
-        print(f"#{row['id']:>4} {row['tx_type']:<8} {row['from_user'] or '':<15} → {row['to_user'] or '':<15} {row['amount']:>8} [{row['status']:<9}] {row['created_at'][:19]}")
+        print(f"#{row['id']:>4} {row['tx_type']:<8} {row['from_user'] or '':<15} → {row['to_user'] or '':<15} {row['amount']:>8} [{row['status']:<9}] {(row['created_at'] or '')[:19]}")
         if args.verbose:
             print(f"      hash: {row['hash'][:20]}...  prev: {row['prev_hash'][:20]}...")
     return 0
@@ -377,7 +366,7 @@ def cmd_history(args):
         print("暂无兑换记录")
         return 0
     for row in rows:
-        print(f"#{row['id']:>4} {row['username']:<20} {row['amount']:>8}积分币 = ${row['coin_value']:<6.2f} [{row['status']:<8}] {row['address'][:30]:<30} {row['created_at'][:19]}")
+        print(f"#{row['id']:>4} {row['username']:<20} {row['amount']:>8}积分币 = ${(row['coin_value'] or 0):<6.2f} [{row['status']:<8}] {(row['address'] or '')[:30]:<30} {(row['created_at'] or '')[:19]}")
     return 0
 
 

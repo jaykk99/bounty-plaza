@@ -33,6 +33,7 @@ jobs:
           SCORE: ${{ github.event.inputs.score }}
           TASK: ${{ github.event.inputs.task }}
         run: |
+          python scripts/coin.py balance admin --init
           echo "Awarding $SUBMITTER"
           echo "Score: $SCORE"
           echo "Task: $TASK"

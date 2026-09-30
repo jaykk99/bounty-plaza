@@ -4,13 +4,19 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import coin
 
-conn = coin.get_db()
-coin.init_db(conn)
+coin.init_db()
 
-# Ensure admin exists
+# Ensure admin exists with initial funding
+conn = coin.get_db()
 coin.ensure_account(conn, "admin")
 admin_bal = coin.get_balance(conn, "admin")
-print(f"admin balance: {admin_bal}")
+if admin_bal == 0:
+    conn.execute("UPDATE accounts SET balance = 100000, updated_at = datetime('now') WHERE username = 'admin'")
+    conn.commit()
+    admin_bal = 100000
+    print("admin funded with 100000 coins")
+else:
+    print(f"admin balance: {admin_bal}")
 
 # Create seed users from HONEY_LEDGER if available
 honey_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "HONEY_LEDGER.json")
@@ -22,9 +28,17 @@ if os.path.isfile(honey_path):
         coin.ensure_account(conn, name)
         honey = data.get("HONEY", 0)
         if honey > 0 and coin.get_balance(conn, name) < honey:
-            # Transfer from admin
-            transfer_id = coin.transfer(conn, "admin", name, honey, "种子导入")
-            print(f"  Seeded {name}: {honey} coins (tx #{transfer_id})")
+            # Transfer from admin via atomic guarded update
+            cur = conn.execute(
+                "UPDATE accounts SET balance = balance - ? WHERE username = 'admin' AND balance >= ?",
+                (honey, honey),
+            )
+            if cur.rowcount:
+                conn.execute("UPDATE accounts SET balance = balance + ? WHERE username = ?", (honey, name))
+                conn.commit()
+                print(f"  Seeded {name}: {honey} coins")
+            else:
+                print(f"  SKIP {name}: admin balance insufficient")
 
 conn.close()
 print("Seed complete")

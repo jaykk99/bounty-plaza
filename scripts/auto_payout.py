@@ -19,23 +19,29 @@ auto_payout.py — 本地自动打款守护脚本
 import argparse
 import json
 import os
-import dotenv
+try:
+    import dotenv
+    _has_dotenv = True
+except ImportError:
+    _has_dotenv = False
 
 _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
-if os.path.isfile(_env_path):
+if _has_dotenv and os.path.isfile(_env_path):
     dotenv.load_dotenv(_env_path)
 
 import sqlite3
+import sys
 
+# coin.py lives next to this script; fall back to built-in RATE if unavailable
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
-    _env = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
-    if os.path.isfile(_env):
-        dotenv.load_dotenv(_env)
+    import coin
+    RATE = coin.RATE
 except ImportError:
-    pass
+    RATE = 0.72  # same as coin.py
 
 import subprocess
-import sys
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -156,7 +162,7 @@ def process_one(req: dict) -> bool:
     username = req["username"]
     amount = req["amount"]
     address = req.get("address", "")
-    cash_value = req.get("coin_value", amount * coin.RATE)
+    cash_value = (req.get("coin_value") or amount * RATE)
 
     print(f"\n  处理兑换 #{rid}: {username} ${cash_value:.2f} -> {address[:16]}...")
 
@@ -216,7 +222,7 @@ def process_pending():
     for req in pending:
         username = req["username"]
         amount = req["amount"]
-        cash = req.get("coin_value", amount * coin.RATE)
+        cash = (req.get("coin_value") or amount * RATE)
         address = req.get("address", "?")[:20]
         print(f"  #{req['id']} | {username} | ${cash:.2f} | {address}...")
 
@@ -235,7 +241,7 @@ def list_pending():
     print(f"{'ID':>4} | {'用户名':<15} | {'金额':>6} | {'地址':<25}")
     print("-" * 60)
     for req in pending:
-        cash = req.get("coin_value", req["amount"] * 0.72)
+        cash = (req.get("coin_value") or req["amount"] * 0.72)
         addr = req.get("address", "")[:22]
         print(f"{req['id']:>4} | {req['username']:<15} | ${cash:<5.2f} | {addr}")
 
