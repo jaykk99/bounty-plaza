@@ -144,6 +144,36 @@ MIGRATIONS = [
     CREATE INDEX IF NOT EXISTS idx_tx_status ON transactions(status);
     CREATE INDEX IF NOT EXISTS idx_tx_created ON transactions(created_at);
     PRAGMA foreign_keys=ON;""",
+
+    # v4: 赏金看板 — bounties + findings
+    """CREATE TABLE IF NOT EXISTS bounties (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        title        TEXT NOT NULL,
+        description  TEXT NOT NULL DEFAULT '',
+        tier         TEXT NOT NULL CHECK(tier IN ('bronze','silver','gold','platinum','diamond')),
+        reward_coins INTEGER NOT NULL CHECK(reward_coins > 0),
+        status       TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','claimed','paid','closed')),
+        claimed_by   TEXT,
+        claimed_at   TEXT,
+        created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS findings (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        bounty_id   INTEGER NOT NULL REFERENCES bounties(id),
+        username    TEXT NOT NULL,
+        title       TEXT NOT NULL,
+        details     TEXT NOT NULL DEFAULT '',
+        status      TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('submitted','accepted','rejected')),
+        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (username) REFERENCES accounts(username)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_bounty_status ON bounties(status);
+    CREATE INDEX IF NOT EXISTS idx_bounty_tier ON bounties(tier);
+    CREATE INDEX IF NOT EXISTS idx_finding_bounty ON findings(bounty_id);
+    CREATE INDEX IF NOT EXISTS idx_finding_status ON findings(status);""",
 ]
 
 

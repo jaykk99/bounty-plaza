@@ -52,6 +52,26 @@ See [RULES.en.md](RULES.en.md) for:
 7. When paid → coins credited to your account
 8. Redeem coins for cash anytime
 
+## 🖥️ Bounty Board Web UI
+
+```bash
+cd web && pip install -r requirements.txt
+export BOUNTY_ADMIN_TOKEN="<strong random string>"  # required for admin features
+python app.py
+# first run: python scripts/seed.py && python scripts/coin.py seed-bounties
+```
+
+Open http://localhost:8080/: bounty board with tier/status filters, claim + submit findings,
+wallet with self-service redeem, leaderboard, and an admin panel (create bounties, award
+findings, approve/pay redemptions).
+
+## 🚀 Deployment
+
+> ⚠️ **Vercel cannot run this project** (Python + SQLite long-lived process; Vercel is
+> stateless Serverless only). Use Render / Railway / Fly.io / your own VPS — Dockerfile and
+> docker-compose are ready, **SQLite needs a persistent volume** or the ledger is lost on
+> restart. Step-by-step: [web/README.md](web/README.md#deployment). Going live is Jay's call.
+
 ## Languages
 
 - [中文](README.md)

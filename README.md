@@ -96,4 +96,28 @@
 
 ---
 
+## 🖥️ 赏金看板 Web UI
+
+```bash
+cd web && pip install -r requirements.txt
+export BOUNTY_ADMIN_TOKEN="强随机串"   # 管理员功能必需
+python app.py
+# 首次：python scripts/seed.py && python scripts/coin.py seed-bounties
+```
+
+浏览器打开 http://localhost:8080/：
+
+- **赏金看板** — 按状态（待认领/进行中/已发放）与等级（青铜→钻石）筛选，卡片展示奖励积分与折合 USD
+- **认领 / 提交成果** — 点进赏金详情，认领（原子先到先得）、提交成果
+- **我的钱包** — 查余额、自助兑换（1 积分起兑）、查兑换单状态
+- **管理** — 创建赏金、评审成果一键授奖（积分自动到账，幂等防重发）、审核/打款兑换单
+
+## 🚀 部署
+
+> ⚠️ **Vercel 跑不了这个项目**（Python + SQLite 常驻进程，Vercel 只支持无状态函数）。
+> 可选 Render / Railway / Fly.io / 自有 VPS（Dockerfile 与 compose 已就绪），**SQLite 必须挂持久化卷**否则重启丢账本。
+> 详细步骤见 [web/README.md](web/README.md#部署)。是否上线、选哪家，等你拍板。
+
+---
+
 > 💡 有问题？在 Issue 中评论或联系管理员。

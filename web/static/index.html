@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bounty Plaza — 赏金广场</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2d333b;
+  --text:#e6edf3; --muted:#8b949e; --accent:#f0b429; --accent2:#58a6ff;
+  --green:#3fb950; --amber:#d29922; --red:#f85149; --blue:#58a6ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.5}
+header{position:sticky;top:0;z-index:10;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.nav{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:12px 16px;flex-wrap:wrap}
+.logo{font-size:20px;font-weight:800;margin-right:12px}
+.logo span{color:var(--accent)}
+.tab{background:none;border:1px solid transparent;color:var(--muted);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);background:var(--panel2);border-color:var(--border)}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+.view{display:none}.view.active{display:block}
+h2{font-size:20px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.chip{border:1px solid var(--border);background:var(--panel);color:var(--muted);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:13px}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#111;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:transform .12s,border-color .12s}
+.card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.card h3{font-size:15px;margin:8px 0 6px}
+.card p.desc{color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tier{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+.tier.bronze{background:#3d2b1f;color:#e8a87c}.tier.silver{background:#2c3440;color:#c0c8d4}
+.tier.gold{background:#3d3413;color:#f0b429}.tier.platinum{background:#173042;color:#58c6ff}
+.tier.diamond{background:#2a1b3d;color:#c678dd}
+.status{font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600}
+.status.open{background:rgba(63,185,80,.15);color:var(--green)}
+.status.claimed{background:rgba(210,153,34,.15);color:var(--amber)}
+.status.paid{background:rgba(88,166,255,.15);color:var(--blue)}
+.status.closed{background:rgba(139,148,158,.15);color:var(--muted)}
+.reward{margin-top:10px;font-size:13px;color:var(--muted)}
+.reward b{color:var(--accent);font-size:17px}
+.meta{font-size:12px;color:var(--muted);margin-top:6px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow-y:auto}
+.modal.open{display:flex}
+.sheet{background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;padding:24px}
+.sheet h2{font-size:18px;margin:10px 0}
+.sheet .desc{white-space:pre-wrap;font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin:10px 0}
+.close{float:right;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer}
+.finding{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:8px 0;background:var(--bg)}
+.finding .ft{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.finding .who{font-size:13px;color:var(--muted)}
+/* forms */
+.form{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin:16px 0}
+.form h3{font-size:15px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:14px;font-family:inherit}
+textarea{min-height:90px;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+button.btn{background:var(--accent);color:#111;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px}
+button.btn:hover{filter:brightness(1.1)}
+button.btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+button.btn.danger{background:var(--red);color:#fff}
+button.btn.small{padding:6px 12px;font-size:12px;margin:4px 4px 0 0}
+button.btn:disabled{opacity:.5;cursor:not-allowed}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.row2{grid-template-columns:1fr}}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-size:12px;font-weight:600}
+tr:hover td{background:var(--panel2)}
+.rank1{color:var(--accent);font-weight:800}
+.wallet-card{background:linear-gradient(135deg,#1c2330,#232c1c);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px}
+.wallet-card .bal{font-size:36px;font-weight:800;color:var(--accent)}
+.wallet-card .usd{color:var(--muted)}
+.notice{padding:10px 14px;border-radius:8px;font-size:13px;margin:10px 0;display:none}
+.notice.ok{display:block;background:rgba(63,185,80,.12);border:1px solid var(--green);color:var(--green)}
+.notice.err{display:block;background:rgba(248,81,73,.12);border:1px solid var(--red);color:var(--red)}
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+.sec-title{font-size:16px;font-weight:700;margin:22px 0 8px}
+.kv{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="logo">🏆 Bounty<span>Plaza</span></div>
+    <button class="tab active" data-view="board">赏金看板</button>
+    <button class="tab" data-view="wallet">我的钱包</button>
+    <button class="tab" data-view="leaderboard">排行榜</button>
+    <button class="tab" data-view="admin">管理</button>
+  </div>
+</header>
+<main>
+  <!-- BOARD -->
+  <section id="view-board" class="view active">
+    <h2>赏金看板</h2>
+    <div class="sub">认领赏金 → 提交成果 → 管理员授奖，积分自动到账，可兑换现金</div>
+    <div class="filters" id="statusFilters"></div>
+    <div class="filters" id="tierFilters"></div>
+    <div class="grid" id="bountyGrid"></div>
+    <div class="empty" id="bountyEmpty" style="display:none">暂无赏金</div>
+  </section>
+
+  <!-- WALLET -->
+  <section id="view-wallet" class="view">
+    <h2>我的钱包</h2>
+    <div class="sub">查询积分余额并发起兑换（1 积分起兑）</div>
+    <div class="form">
+      <label>用户名</label>
+      <input id="wUser" placeholder="输入你的用户名">
+      <button class="btn" onclick="loadWallet()">查询余额</button>
+      <div id="walletInfo"></div>
+    </div>
+    <div class="form">
+      <h3>💱 自助兑换</h3>
+      <div class="row2">
+        <div><label>兑换积分</label><input id="rAmount" type="number" min="1" placeholder="数量"></div>
+        <div><label>收款地址（PayPal 邮箱 / USDT 地址）</label><input id="rAddr" placeholder="收款地址"></div>
+      </div>
+      <button class="btn" onclick="doRedeem()">提交兑换</button>
+      <div class="notice" id="redeemNotice"></div>
+    </div>
+    <div class="form">
+      <h3>🔍 兑换状态查询</h3>
+      <label>兑换单号</label>
+      <input id="rId" type="number" placeholder="兑换 #ID">
+      <button class="btn ghost" onclick="checkRedeem()">查询</button>
+      <div id="redeemInfo"></div>
+    </div>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section id="view-leaderboard" class="view">
+    <h2>排行榜</h2>
+    <div class="sub">按积分余额排名</div>
+    <div class="form" style="padding:8px 18px"><table>
+      <thead><tr><th>排名</th><th>用户</th><th>积分</th><th>折合 USD</th></tr></thead>
+      <tbody id="lbBody"></tbody>
+    </table></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="view-admin" class="view">
+    <h2>管理</h2>
+    <div class="sub">需要管理员令牌（服务器环境变量 BOUNTY_ADMIN_TOKEN）</div>
+    <div class="form">
+      <label>管理员令牌</label>
+      <input id="adminToken" type="password" placeholder="X-Admin-Token">
+      <button class="btn ghost" onclick="saveToken()">保存令牌</button>
+      <span class="kv" id="tokenState"></span>
+    </div>
+    <div class="form">
+      <h3>➕ 创建赏金</h3>
+      <label>标题</label><input id="bTitle" placeholder="赏金标题">
+      <label>描述</label><textarea id="bDesc" placeholder="任务说明、验收标准…"></textarea>
+      <div class="row2">
+        <div><label>等级</label><select id="bTier">
+          <option value="bronze">🥉 青铜 bronze</option><option value="silver">🥈 白银 silver</option>
+          <option value="gold">🥇 黄金 gold</option><option value="platinum">💠 铂金 platinum</option>
+          <option value="diamond">💎 钻石 diamond</option>
+        </select></div>
+        <div><label>奖励（积分）</label><input id="bReward" type="number" min="1" placeholder="100"></div>
+      </div>
+      <button class="btn" onclick="createBounty()">创建</button>
+      <div class="notice" id="bountyNotice"></div>
+    </div>
+    <div class="sec-title">待评审成果</div>
+    <div id="pendingFindings"></div>
+    <div class="sec-title">待处理兑换</div>
+    <div id="pendingRedeems"></div>
+  </section>
+</main>
+
+<!-- DETAIL MODAL -->
+<div class="modal" id="modal"><div class="sheet">
+  <button class="close" onclick="closeModal()">×</button>
+  <div id="modalBody"></div>
+</div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const api=(p,o={})=>fetch(p,o).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));return d;});
+const adminHeaders=()=>({'Content-Type':'application/json','X-Admin-Token':localStorage.getItem('bp_admin_token')||''});
+const TIERS={bronze:'🥉 青铜',silver:'🥈 白银',gold:'🥇 黄金',platinum:'💠 铂金',diamond:'💎 钻石'};
+const ST={open:'待认领',claimed:'进行中',paid:'已发放',closed:'已关闭'};
+
+let fStatus='',fTier='';
+function chipRow(el,items,cur,cb){$(el).innerHTML=items.map(([v,l])=>`<button class="chip${v===cur?' active':''}" data-v="${v}">${l}</button>`).join('');
+  $(el).querySelectorAll('.chip').forEach(c=>c.onclick=()=>cb(c.dataset.v));}
+
+function renderFilters(){
+  chipRow('statusFilters',[['','全部状态'],['open','🟢 待认领'],['claimed','🟡 进行中'],['paid','🔵 已发放'],['closed','⚪ 已关闭']],fStatus,v=>{fStatus=v;renderFilters();loadBoard();});
+  chipRow('tierFilters',[['','全部等级'],...Object.entries(TIERS)],fTier,v=>{fTier=v;renderFilters();loadBoard();});
+}
+async function loadBoard(){
+  const q=new URLSearchParams();if(fStatus)q.set('status',fStatus);if(fTier)q.set('tier',fTier);
+  let list=[];try{list=await api('/api/bounties?'+q);}catch(e){$('bountyEmpty').style.display='block';$('bountyEmpty').textContent='加载失败: '+e.message;return;}
+  $('bountyEmpty').style.display=list.length?'none':'block';
+  $('bountyGrid').innerHTML=list.map(b=>`
+    <div class="card" onclick="openBounty(${b.id})">
+      <div class="badges"><span class="tier ${b.tier}">${TIERS[b.tier]}</span><span class="status ${b.status}">${ST[b.status]}</span></div>
+      <h3>${esc(b.title)}</h3><p class="desc">${esc(b.description)}</p>
+      <div class="reward"><b>${b.reward_coins}</b> 积分 ≈ $${b.reward_usd}</div>
+      ${b.claimed_by?`<div class="meta">认领者：${esc(b.claimed_by)}</div>`:`<div class="meta">创建于 ${fmtT(b.created_at)}</div>`}
+    </div>`).join('');
+}
+async function openBounty(id){
+  const b=await api('/api/bounties/'+id);
+  const canClaim=b.status==='open', canSubmit=['open','claimed'].includes(b.status);
+  $('modalBody').innerHTML=`
+    <div class="badges"><span class="tier ${b.tier}">${TIERS[b.tier]}</span><span class="status ${b.status}">${ST[b.status]}</span></div>
+    <h2>${esc(b.title)}</h2>
+    <div class="reward"><b>${b.reward_coins}</b> 积分 ≈ $${b.reward_usd}</div>
+    <div class="desc">${esc(b.description)||'（无描述）'}</div>
+    ${b.claimed_by?`<div class="meta">认领者：${esc(b.claimed_by)} · ${fmtT(b.claimed_at)}</div>`:''}
+    ${canClaim?`<div class="form"><h3>🙋 认领这个赏金</h3><label>用户名</label><input id="mClaimUser" placeholder="你的用户名"><button class="btn" onclick="claimBounty(${b.id})">认领</button><div class="notice" id="mNotice"></div></div>`:''}
+    <div class="sec-title">提交的成果（${b.findings.length}）</div>
+    ${b.findings.map(f=>`<div class="finding"><div class="ft"><b>${esc(f.title)}</b><span class="status ${f.status==='accepted'?'open':f.status==='rejected'?'closed':'claimed'}">${{submitted:'待评审',accepted:'已接受',rejected:'未接受'}[f.status]}</span></div><div class="who">${esc(f.username)} · ${fmtT(f.created_at)}</div>${f.details?`<div style="font-size:13px;margin-top:6px;white-space:pre-wrap">${esc(f.details)}</div>`:''}</div>`).join('')||'<div class="empty">还没有人提交</div>'}
+    ${canSubmit?`<div class="form"><h3>📤 提交成果</h3><label>用户名</label><input id="mFUser" placeholder="你的用户名"><label>成果标题</label><input id="mFTitle" placeholder="一句话说明你做了什么"><label>详情（链接/说明）</label><textarea id="mFDetails" placeholder="PR 链接、实现说明…"></textarea><button class="btn" onclick="submitFinding(${b.id})">提交成果</button><div class="notice" id="mNotice2"></div></div>`:''}`;
+  $('modal').classList.add('open');
+}
+function closeModal(){$('modal').classList.remove('open');}
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+async function claimBounty(id){
+  const u=$('mClaimUser').value.trim();if(!u)return note('mNotice','err','请填写用户名');
+  try{await api('/api/bounties/'+id+'/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u})});
+    note('mNotice','ok','认领成功！');loadBoard();setTimeout(()=>openBounty(id),600);}catch(e){note('mNotice','err',e.message);}
+}
+async function submitFinding(id){
+  const u=$('mFUser').value.trim(),t=$('mFTitle').value.trim(),d=$('mFDetails').value;
+  if(!u||!t)return note('mNotice2','err','用户名和成果标题必填');
+  try{await api('/api/bounties/'+id+'/findings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,title:t,details:d})});
+    note('mNotice2','ok','提交成功，等待管理员评审');setTimeout(()=>openBounty(id),600);}catch(e){note('mNotice2','err',e.message);}
+}
+function note(id,cls,msg){const n=$(id);n.className='notice '+cls;n.textContent=msg;}
+/* wallet */
+async function loadWallet(){
+  const u=$('wUser').value.trim();if(!u)return;
+  try{const b=await api('/balance/'+encodeURIComponent(u));
+    $('walletInfo').innerHTML=`<div class="wallet-card"><div class="kv">${esc(b.username)}</div><div class="bal">${b.balance_coins} <span style="font-size:16px">积分</span></div><div class="usd">≈ $${b.cash_usd} USD（${b.rate_label||''}1 积分 = $${b.rate}）</div></div>`;
+    const h=await api('/history/'+encodeURIComponent(u));
+    if(h.length)$('walletInfo').innerHTML+=`<div class="sec-title">兑换历史</div>`+h.map(x=>`<div class="finding"><div class="ft"><b>#${x.id} · ${x.amount_coins} 积分 ≈ $${x.cash_usd}</b><span class="status ${x.status==='paid'?'open':x.status==='approved'?'claimed':'closed'}">${{pending:'待审核',approved:'待打款',rejected:'已拒绝',paid:'已支付'}[x.status]}</span></div><div class="who">${fmtT(x.created_at)} · ${esc(x.address)}</div></div>`).join('');
+  }catch(e){$('walletInfo').innerHTML=`<div class="notice err" style="display:block">${e.message}</div>`;}
+}
+async function doRedeem(){
+  const u=$('wUser').value.trim(),a=parseInt($('rAmount').value),addr=$('rAddr').value.trim();
+  if(!u||!a||!addr)return note('redeemNotice','err','请填写用户名、数量和收款地址');
+  try{const r=await api('/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,amount:a,address:addr})});
+    note('redeemNotice','ok',`兑换 #${r.redeem_id} 已批准：${r.amount_coins} 积分 ≈ $${r.cash_usd}，等待打款`);loadWallet();}catch(e){note('redeemNotice','err',e.message);}
+}
+async function checkRedeem(){
+  const id=$('rId').value;if(!id)return;
+  try{const r=await api('/redeem/'+id);
+    $('redeemInfo').innerHTML=`<div class="finding"><div class="ft"><b>#${r.id} · ${r.amount_coins} 积分 ≈ $${r.cash_usd}</b><span class="status ${r.status==='paid'?'open':r.status==='approved'?'claimed':'closed'}">${{pending:'待审核',approved:'待打款',rejected:'已拒绝',paid:'已支付'}[r.status]}</span></div><div class="who">${esc(r.username)} · ${fmtT(r.created_at)}</div></div>`;
+  }catch(e){$('redeemInfo').innerHTML=`<div class="notice err" style="display:block">${e.message}</div>`;}
+}
+/* leaderboard */
+async function loadLB(){
+  const rows=await api('/ledger');
+  $('lbBody').innerHTML=rows.map(r=>`<tr><td class="${r.rank<=3?'rank1':''}">${['🥇','🥈','🥉'][r.rank-1]||r.rank}</td><td>${esc(r.username)}</td><td>${r.balance_coins}</td><td>$${r.cash_usd}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">暂无数据</td></tr>';
+}
+/* admin */
+function saveToken(){localStorage.setItem('bp_admin_token',$('adminToken').value.trim());updTokenState();loadAdmin();}
+function updTokenState(){$('tokenState').textContent=localStorage.getItem('bp_admin_token')?'● 已保存':'○ 未设置';}
+async function createBounty(){
+  const t=$('bTitle').value.trim(),rw=parseInt($('bReward').value);
+  if(!t||!rw)return note('bountyNotice','err','标题和奖励必填');
+  try{const r=await api('/api/admin/bounties',{method:'POST',headers:adminHeaders(),body:JSON.stringify({title:t,description:$('bDesc').value,tier:$('bTier').value,reward_coins:rw})});
+    note('bountyNotice','ok','赏金 #'+r.bounty_id+' 已创建');$('bTitle').value='';$('bDesc').value='';loadBoard();}catch(e){note('bountyNotice','err',e.message);}
+}
+async function loadAdmin(){
+  try{
+    const fs=await api('/api/admin/findings?status=submitted',{headers:adminHeaders()});
+    $('pendingFindings').innerHTML=fs.map(f=>`<div class="finding"><div class="ft"><b>#${f.id} ${esc(f.title)}</b><span><button class="btn small" onclick="awardFinding(${f.id})">授奖</button></span></div><div class="who">赏金 #${f.bounty_id} · ${esc(f.username)} · ${fmtT(f.created_at)}</div>${f.details?`<div style="font-size:13px;margin-top:6px;white-space:pre-wrap">${esc(f.details)}</div>`:''}</div>`).join('')||'<div class="empty">没有待评审成果</div>';
+  }catch(e){$('pendingFindings').innerHTML=`<div class="notice err" style="display:block">${e.message}</div>`;}
+  try{
+    const rs=await api('/api/admin/redeems?status=pending',{headers:adminHeaders()});
+    $('pendingRedeems').innerHTML=rs.map(r=>`<div class="finding"><div class="ft"><b>#${r.id} · ${esc(r.username)} · ${r.amount_coins} 积分 ≈ $${r.cash_usd}</b><span><button class="btn small" onclick="redeemAct(${r.id},'approve')">批准</button><button class="btn small danger" onclick="redeemAct(${r.id},'reject')">拒绝</button></span></div><div class="who">${fmtT(r.created_at)} · ${esc(r.address)}</div></div>`).join('')||'<div class="empty">没有待处理兑换</div>';
+    const ap=await api('/api/admin/redeems?status=approved',{headers:adminHeaders()});
+    if(ap.length)$('pendingRedeems').innerHTML+=`<div class="sec-title">待打款</div>`+ap.map(r=>`<div class="finding"><div class="ft"><b>#${r.id} · ${esc(r.username)} · $${r.cash_usd}</b><button class="btn small" onclick="redeemAct(${r.id},'pay')">标记已打款</button></div><div class="who">${esc(r.address)}</div></div>`).join('');
+  }catch(e){$('pendingRedeems').innerHTML=`<div class="notice err" style="display:block">${e.message}</div>`;}
+}
+async function awardFinding(id){
+  if(!confirm('确认授奖 #'+id+'？积分将立即发放，赏金置为已发放。'))return;
+  try{await api('/api/admin/findings/'+id+'/award',{method:'POST',headers:adminHeaders()});loadAdmin();loadBoard();}catch(e){alert(e.message);}
+}
+async function redeemAct(id,act){
+  try{await api('/api/admin/redeems/'+id+'/'+act,{method:'POST',headers:adminHeaders()});loadAdmin();}catch(e){alert(e.message);}
+}
+/* tabs */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');$('view-'+t.dataset.view).classList.add('active');
+  if(t.dataset.view==='leaderboard')loadLB();
+  if(t.dataset.view==='admin'){updTokenState();loadAdmin();}
+  if(t.dataset.view==='board')loadBoard();
+});
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtT=s=>s?s.slice(0,16).replace('T',' '):'';
+$('adminToken').value=localStorage.getItem('bp_admin_token')||'';
+renderFilters();loadBoard();
+</script>
+</body>
+</html>
